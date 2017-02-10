@@ -1,6 +1,6 @@
 # gns3api - Simple python module to access the GNS3 API
 
-This module provides an easy access the GNS3 API, see http://api.gns3.net/en/2.0.
+This module provides an easy access to the GNS3 API, see http://api.gns3.net/en/2.0 .
 
 Example:
 - create an API object  
