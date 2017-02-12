@@ -8,7 +8,7 @@ Example:
 - create an API object  
   api = gns3api.api()
 - access the API  
-  (status, data) = api.request('POST', '/v2/version', {"version": "0.1"})
+  data = api.request('POST', '/v2/version', {"version": "0.1"})
 
 Restrictions:
 - Notifications are not supported
