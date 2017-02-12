@@ -1,5 +1,5 @@
 """
-Access GNS3 controller via APi
+Access GNS3 controller via API
 """
 
 import configparser
@@ -10,6 +10,8 @@ import os
 import sys
 from base64 import b64encode
 
+class APIException(http.client.HTTPException):
+    pass
 
 class api:
 
@@ -96,7 +98,7 @@ class api:
         :param path:   URL path
         :param input:  input data to the API endpoint
 
-        :returns: Tuple of response status and output data
+        :returns: output data
         """
 
         # json encode input
@@ -112,18 +114,27 @@ class api:
 
         # send request
         self._conn.request(method, path, body, headers=headers)
-        resp = self._conn.getresponse()
 
         # get response
+        resp = self._conn.getresponse()
         data = resp.read()
-        if resp.status == http.client.UNAUTHORIZED:
-            raise http.client.HTTPException(resp.status, 'Unauthorized')
         try:
             output = json.loads(data.decode('utf-8', errors='ignore'))
         except json.decoder.JSONDecodeError:
             output = data
 
-        return (resp.status, output)
+        # check for errors
+        if resp.status < 200 or resp.status >= 300:
+            try:
+                message = output['message']
+            except (TypeError, KeyError):
+                if data is not None and data != b'':
+                    message = data.decode('utf-8', errors='ignore')
+                else:
+                    message = resp.reason
+            raise APIException(resp.status, message)
+
+        return output
 
     def close(self):
         """

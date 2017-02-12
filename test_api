@@ -7,20 +7,21 @@ api = gns3api.api()
 print("GNS3 controller =", api.controller)
 
 print()
-(status, data) = api.request('GET', '/v2/version')
-version = None
-if status == 200:
-    version = data['version']
+data = api.request('GET', '/v2/version')
+version = data['version']
 print('GET /v2/version')
-print(status, data)
+print(data)
 
 print()
-(status, data) = api.request('POST', '/v2/version', {"version": "0.1"})
 print('POST /v2/version input={"version": "0.1"}')
-print(status, data)
+try:
+    data = api.request('POST', '/v2/version', {"version": "0.1"})
+    print(data)
+except (gns3api.APIException) as e:
+    print('Error {}: {}'.format(e.args[0], e.args[1]))
 
-if version is not None:
-    print()
-    (status, data) = api.request('POST', '/v2/version', {"version": version})
-    print('POST /v2/version input={{"version": "{}"}}'.format(version))
-    print(status, data)
+print()
+print('POST /v2/version input={{"version": "{}"}}'.format(version))
+data = api.request('POST', '/v2/version', {"version": version})
+print(data)
+

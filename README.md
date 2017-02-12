@@ -2,6 +2,8 @@
 
 This module provides an easy access to the GNS3 API, see http://api.gns3.net/en/2.0 .
 
+**Warning**: The module is not yet stable, it may change at any time.
+
 Example:
 - create an API object  
   api = gns3api.api()
