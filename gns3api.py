@@ -91,13 +91,14 @@ class api:
 
         return (proto, host, port, user, passwd)
 
-    def request(self, method, path, input=None):
+    def request(self, method, path, input=None, timeout=60):
         """
         API request
 
-        :param method: HTTP method ('GET'/'PUT'/'POST'/'DELETE')
-        :param path:   URL path
-        :param input:  input data to the API endpoint
+        :param method:  HTTP method ('GET'/'PUT'/'POST'/'DELETE')
+        :param path:    URL path
+        :param input:   input data to the API endpoint
+        :param timeout: timeout, default 60
 
         :returns: output data
         """
@@ -114,6 +115,10 @@ class api:
             headers['Authorization'] = self._auth
 
         # send request
+        if self._conn.timeout != timeout:
+            self._conn.timeout = timeout
+            if self._conn.sock:
+                self._conn.sock.settimeout(timeout)
         self._conn.request(method, path, body, headers=headers)
 
         # get response
