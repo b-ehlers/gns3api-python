@@ -30,7 +30,7 @@ class api:
         """
 
         if host is None or host == '':
-            (proto, host, port, user, passwd) = self.get_controller_params()
+            (proto, host, port, user, passwd) = api.get_controller_params()
 
         self.controller = "{}://{}:{}".format(proto, host, port)
 
@@ -58,7 +58,8 @@ class api:
 
         self._conn.connect()
 
-    def get_controller_params(self):
+    @staticmethod
+    def get_controller_params():
         """
         Returns GNS3 controller connection parameters
 
