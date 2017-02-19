@@ -18,7 +18,7 @@ try:
     data = api.request('POST', '/v2/version', {"version": "0.1"})
     print(data)
 except (gns3api.APIException) as e:
-    print('Error {}: {}'.format(e.args[0], e.args[1]))
+    print(str(e))
 
 print()
 print('POST /v2/version input={{"version": "{}"}}'.format(version))

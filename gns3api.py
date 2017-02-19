@@ -11,7 +11,8 @@ import sys
 from base64 import b64encode
 
 class APIException(http.client.HTTPException):
-    pass
+    def __str__(self):
+        return '[Status {}] {}'.format(self.args[0], self.args[1])
 
 class api:
 
