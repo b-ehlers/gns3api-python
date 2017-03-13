@@ -104,7 +104,7 @@ class api:
         API request
 
         :param method:  HTTP method ('GET'/'PUT'/'POST'/'DELETE')
-        :param path:    URL path
+        :param path:    URL path, can be a list or tuple
         :param input:   input data to the API endpoint
         :param timeout: timeout, default 60
 
@@ -116,6 +116,17 @@ class api:
             body = None
         else:
             body = json.dumps(input, separators=(',', ':'))
+
+        # methods are upper case
+        method.upper()
+
+        # make path variable to an URL path
+        if type(path) in (list, tuple):
+            path = "/".join(str(x) for x in path)
+        else:
+            path = str(path)
+        if not path.startswith("/"):
+            path = "/" + path
 
         # authentication
         headers = {}
