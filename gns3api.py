@@ -28,6 +28,9 @@ class api:
         :param user:   User name, None for no authentification
         :param passwd: Password
         :param verify: Verify CERT (on https), default True
+                       False: no CERT verification
+                       True:  verification using the system CA certificates
+                       file:  verification using the file and the system CA
         """
 
         if host is None or host == '':
@@ -49,7 +52,10 @@ class api:
             self._conn = http.client.HTTPConnection(host, port, timeout=10)
         elif proto == 'https':
             context = ssl.create_default_context()
-            if not verify:
+            if isinstance(verify, str):
+                context.check_hostname = False
+                context.load_verify_locations(cafile=verify)
+            elif not verify:
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
             self._conn = http.client.HTTPSConnection(host, port, timeout=10,
