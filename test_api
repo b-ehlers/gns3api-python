@@ -10,6 +10,7 @@ print()
 data = api.request('GET', '/v2/version')
 version = data['version']
 print('GET /v2/version')
+print("Status: {}".format(api.status_code))
 print(data)
 
 print()

@@ -37,6 +37,7 @@ class api:
             (proto, host, port, user, passwd) = api.get_controller_params()
 
         self.controller = "{}://{}:{}".format(proto, host, port)
+        self.status_code = None
 
         # authentication
         if user is None or user == '':
@@ -137,7 +138,8 @@ class api:
             output = data
 
         # check for errors
-        if resp.status < 200 or resp.status >= 300:
+        self.status_code = resp.status
+        if self.status_code < 200 or self.status_code >= 300:
             try:
                 message = output['message']
             except (TypeError, KeyError):
@@ -145,7 +147,7 @@ class api:
                     message = data.decode('utf-8', errors='ignore')
                 else:
                     message = resp.reason
-            raise APIException(resp.status, message)
+            raise APIException(self.status_code, message)
 
         return output
 
