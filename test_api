@@ -2,27 +2,27 @@
 
 import gns3api
 
-api = gns3api.api()
-# api = gns3api.api(host="remote", verify="server.cert")
+api = gns3api.GNS3Api()
+# api = gns3api.GNS3Api("https", "remote", verify="server.cert")
 print("GNS3 controller =", api.controller)
 
 print()
+print('GET /v2/version')
 data = api.request('GET', '/v2/version')
 version = data['version']
-print('GET /v2/version')
 print("Status: {}".format(api.status_code))
 print(data)
 
 print()
-print('POST /v2/version input={"version": "0.1"}')
+print('POST /v2/version {"version": "0.1"}')
 try:
     data = api.request('POST', '/v2/version', {"version": "0.1"})
     print(data)
-except (gns3api.APIException) as e:
-    print(str(e))
+except (gns3api.GNS3ApiException) as err:
+    print(str(err))
 
 print()
-print('POST /v2/version input={{"version": "{}"}}'.format(version))
+print('POST /v2/version {{"version": "{}"}}'.format(version))
 data = api.request('POST', '/v2/version', {"version": version})
 print(data)
 

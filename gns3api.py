@@ -10,43 +10,49 @@ import os
 import sys
 from base64 import b64encode
 
-class APIException(http.client.HTTPException):
+class GNS3ApiException(http.client.HTTPException):
+    """
+    GNS3 API Exception
+    """
+
     def __str__(self):
         return '[Status {}] {}'.format(self.args[0], self.args[1])
 
-class api:
+class GNS3Api:
+    """
+    GNS3 API - an API to GNS3
+    """
 
     def __init__(self, proto='http', host=None, port=3080,
-                 user=None, passwd=None, verify=True):
+                 user=None, password=None, verify=True):
         """
         GNS3 API
 
-        :param proto:  Protocol (http/https), default 'http'
-        :param host:   Host name or IP, if None the connection parameters
-                       are read from the GNS3 configuration file
-        :param port;   Port number, default 3080
-        :param user:   User name, None for no authentification
-        :param passwd: Password
-        :param verify: Verify CERT (on https), default True
-                       False: no CERT verification
-                       True:  verification using the system CA certificates
-                       file:  verification using the file and the system CA
+        :param proto:    Protocol (http/https), default 'http'
+        :param host:     Host name or IP, if None the connection parameters
+                         are read from the GNS3 configuration file
+        :param port;     Port number, default 3080
+        :param user:     User name, None for no authentification
+        :param password: Password
+        :param verify:   Verify CERT (on https), default True
+                         False: no CERT verification
+                         True:  verification using the system CA certificates
+                         file:  verification using the file and the system CA
         """
 
         if host is None or host == '':
-            (proto, host, port, user, passwd) = api.get_controller_params()
+            (proto, host, port, user, password) = GNS3Api.get_controller_params()
 
         self.controller = "{}://{}:{}".format(proto, host, port)
         self.status_code = None
 
         # authentication
-        if user is None or user == '':
-            self._auth = None
-        else:
-            if passwd is None:
-                passwd = ''
-            self._auth = 'Basic ' + \
-                b64encode((user+':'+passwd).encode()).decode('ascii')
+        self._auth = {}
+        if user is not None and user != '':
+            if password is None:
+                password = ''
+            self._auth['Authorization'] = 'Basic ' + \
+                b64encode((user+':'+password).encode('utf-8')).decode('ascii')
 
         # open connection
         if proto == 'http':
@@ -95,72 +101,67 @@ class api:
         host = serv_conf.get('host', '127.0.0.1')
         port = int(serv_conf.get('port', 3080))
         user = serv_conf.get('user', None)
-        passwd = serv_conf.get('password', None)
+        password = serv_conf.get('password', None)
 
-        return (proto, host, port, user, passwd)
+        return (proto, host, port, user, password)
 
-    def request(self, method, path, input=None, timeout=60):
+    def request(self, method, path, args=None, timeout=60):
         """
         API request
 
         :param method:  HTTP method ('GET'/'PUT'/'POST'/'DELETE')
         :param path:    URL path, can be a list or tuple
-        :param input:   input data to the API endpoint
+        :param args:    arguments to the API endpoint
         :param timeout: timeout, default 60
 
-        :returns: output data
+        :returns: result
         """
 
-        # json encode input
-        if input is None:
+        # json encode args
+        if args is None:
             body = None
         else:
-            body = json.dumps(input, separators=(',', ':'))
+            body = json.dumps(args, separators=(',', ':'))
 
         # methods are upper case
         method.upper()
 
         # make path variable to an URL path
-        if type(path) in (list, tuple):
+        if isinstance(path, list) or isinstance(path, tuple):
             path = "/".join(str(x) for x in path)
         else:
             path = str(path)
         if not path.startswith("/"):
             path = "/" + path
 
-        # authentication
-        headers = {}
-        if self._auth is not None:
-            headers['Authorization'] = self._auth
-
         # send request
         if self._conn.timeout != timeout:
             self._conn.timeout = timeout
             if self._conn.sock:
                 self._conn.sock.settimeout(timeout)
-        self._conn.request(method, path, body, headers=headers)
+        self._conn.request(method, path, body, headers=self._auth)
 
         # get response
         resp = self._conn.getresponse()
         data = resp.read()
         try:
-            output = json.loads(data.decode('utf-8', errors='ignore'))
+            result = json.loads(data.decode('utf-8', errors='ignore'))
         except json.decoder.JSONDecodeError:
-            output = data
+            result = data
 
         # check for errors
         self.status_code = resp.status
         if self.status_code < 200 or self.status_code >= 300:
             try:
-                message = output['message']
+                message = result['message']
             except (TypeError, KeyError):
                 if data is not None and data != b'':
                     message = data.decode('utf-8', errors='ignore')
                 else:
                     message = resp.reason
-            raise APIException(self.status_code, message)
+            raise GNS3ApiException(self.status_code, message)
 
-        return output
+        return result
 
     def close(self):
         """
