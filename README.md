@@ -6,7 +6,7 @@ This module provides an easy access to the GNS3 API, see http://api.gns3.net/en/
 
 Example:
 - create an API object  
-  api = gns3api.api()
+  api = gns3api.GNS3Api()
 - access the API  
   data = api.request('POST', '/v2/version', {"version": "0.1"})
 
