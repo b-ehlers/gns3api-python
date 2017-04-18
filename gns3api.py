@@ -139,14 +139,16 @@ class GNS3Api:
             self._conn.timeout = timeout
             if self._conn.sock:
                 self._conn.sock.settimeout(timeout)
-        self._conn.request(method, path, body, headers=self._auth)
+        headers = {'Content-Type': 'application/json'}
+        headers.update(self._auth)
+        self._conn.request(method, path, body, headers=headers)
 
         # get response
         resp = self._conn.getresponse()
         data = resp.read()
-        try:
+        if resp.getheader('Content-Type') == 'application/json':
             result = json.loads(data.decode('utf-8', errors='ignore'))
-        except json.decoder.JSONDecodeError:
+        else:
             result = data
 
         # check for errors
