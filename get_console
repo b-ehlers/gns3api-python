@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+#
+# get_console - get console port of GNS3 node
+#
+# Usage: get_console [project] node
+#
+
+import sys
+import gns3api
+
+# abort program with error message
+def die(*error_list):
+    error_string = ' '.join(str(x) for x in error_list)
+    if not error_string.endswith('\n'):
+        error_string += '\n'
+    sys.stderr.write(error_string)
+    sys.exit(1)
+
+# get command line parameter
+if len(sys.argv) == 2:
+    proj_name = None
+    node_name = sys.argv[1]
+elif len(sys.argv) == 3:
+    proj_name = sys.argv[1]
+    node_name = sys.argv[2]
+else:
+    die("Usage: get_console [project] node")
+
+# connect to GNS3 controller
+try:
+    api = gns3api.GNS3Api()
+except (Exception) as err:
+    die("Can't connect to GNS3 controller:", err)
+
+# Open the project
+project = None
+if proj_name is None:		# search for the only open project
+    for proj in api.request('GET', '/v2/projects'):
+        if proj['status'] == 'opened':
+            if project is None:
+                project = proj
+            else:
+                die("Multiple projects active, set project as first param")
+    if project is None:
+        die("No project is open")
+else:				# search for proj_name
+    for proj in api.request('GET', '/v2/projects'):
+        if proj['name'] == proj_name:
+            if proj['status'] != 'opened':
+                die("Project '{}' not open".format(proj_name))
+            project = proj
+            break
+    if project is None:
+        die("Project '{}' not found".format(proj_name))
+
+# search for node_name
+for node in api.request('GET', ('/v2/projects', project['project_id'], 'nodes')):
+    if node['name'] == node_name:
+        break
+else:
+    die("Node '{}' not found in project '{}'".format(node_name, project['name']))
+
+# print console port
+if node['console'] is None:
+    die("Node '{}' doesn't use the console".format(node_name))
+print(node['console'])

@@ -16,3 +16,7 @@ Restrictions:
 Requirements:
 - Python 3
 - GNS3 2.0
+
+`test_api` is a small program to test some basic API calls.
+
+`get_console` is a simple application to get the console port of a node.
