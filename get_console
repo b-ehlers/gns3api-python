@@ -9,12 +9,13 @@ import sys
 import gns3api
 
 # abort program with error message
-def die(*error_list):
-    error_string = ' '.join(str(x) for x in error_list)
-    if not error_string.endswith('\n'):
-        error_string += '\n'
-    sys.stderr.write(error_string)
+def die(*msg_list):
+    error_msg = ' '.join(str(x) for x in msg_list)
+    if not error_msg.endswith('\n'):
+        error_msg += '\n'
+    sys.stderr.write(error_msg)
     sys.exit(1)
+
 
 # get command line parameter
 if len(sys.argv) == 2:
@@ -32,7 +33,7 @@ try:
 except (Exception) as err:
     die("Can't connect to GNS3 controller:", err)
 
-# Open the project
+# search for the project
 project = None
 if proj_name is None:		# search for the only open project
     for proj in api.request('GET', '/v2/projects'):
@@ -62,16 +63,12 @@ else:
 if node['status'] != 'started':
     die("Node '{}' is {}".format(node_name, node['status']))
 
-# get computes
-compute = {}
-for comp in api.request('GET', '/v2/computes'):
-    compute[comp['compute_id']] = comp
-
 # print console host and port
 console_port = node['console']
 if console_port is None:
     die("Node '{}' doesn't use the console".format(node_name))
 console_host = node['console_host']
 if console_host == '0.0.0.0' or console_host == '::':
-    console_host = compute[node['compute_id']]['host']
+     compute = api.request('GET', ('/v2/computes', node['compute_id']))
+     console_host = compute['host']
 print("{} {}".format(console_host, console_port))
