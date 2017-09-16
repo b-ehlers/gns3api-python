@@ -2,15 +2,19 @@
 Access GNS3 controller via API
 """
 
-import configparser
-import http.client
-import ssl
-import json
 import os
 import sys
+if sys.version_info[0] < 3:
+    import ConfigParser as configparser
+    import httplib as http_client
+else:
+    import configparser
+    import http.client as http_client
+import ssl
+import json
 from base64 import b64encode
 
-class GNS3ApiException(http.client.HTTPException):
+class GNS3ApiException(http_client.HTTPException):
     """
     GNS3 API Exception
     """
@@ -56,7 +60,7 @@ class GNS3Api:
 
         # open connection
         if proto == 'http':
-            self._conn = http.client.HTTPConnection(host, port, timeout=10)
+            self._conn = http_client.HTTPConnection(host, port, timeout=10)
         elif proto == 'https':
             context = ssl.create_default_context()
             if isinstance(verify, str):
@@ -65,10 +69,10 @@ class GNS3Api:
             elif not verify:
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
-            self._conn = http.client.HTTPSConnection(host, port, timeout=10,
+            self._conn = http_client.HTTPSConnection(host, port, timeout=10,
                                                      context=context)
         else:
-            raise http.client.UnknownProtocol(proto)
+            raise http_client.UnknownProtocol(proto)
 
         self._conn.connect()
 
@@ -92,8 +96,8 @@ class GNS3Api:
         config = configparser.ConfigParser()
         try:
             config.read(fn_conf)
-            serv_conf = config['Server']
-        except (OSError, configparser.Error, KeyError):
+            serv_conf = dict(config.items('Server'))
+        except (OSError, configparser.Error):
             serv_conf = {}
 
         # extract config variables

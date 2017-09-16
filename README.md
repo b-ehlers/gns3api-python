@@ -14,7 +14,7 @@ Restrictions:
 - Notifications are not supported
 
 Requirements:
-- Python 3
+- Python 2.7 or 3
 - GNS3 2.0
 
 `test_api` is a small program to test some basic API calls.

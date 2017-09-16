@@ -4,16 +4,16 @@ import gns3api
 
 api = gns3api.GNS3Api()
 # api = gns3api.GNS3Api("https", "remote", verify="server.cert")
-print("GNS3 controller =", api.controller)
+print("GNS3 controller = " + api.controller)
 
-print()
+print('')
 print('GET /v2/version')
 data = api.request('GET', '/v2/version')
 version = data['version']
 print("Status: {}".format(api.status_code))
 print(data)
 
-print()
+print('')
 print('POST /v2/version {"version": "0.1"}')
 try:
     data = api.request('POST', '/v2/version', {"version": "0.1"})
@@ -21,15 +21,15 @@ try:
 except (gns3api.GNS3ApiException) as err:
     print(str(err))
 
-print()
+print('')
 print('POST /v2/version {{"version": "{}"}}'.format(version))
 data = api.request('POST', '/v2/version', {"version": version})
 print(data)
 
-print()
+print('')
 print('GET /v2/projects')
 for project in api.request('GET', '/v2/projects'):
-    print("Project name:", project['name'])
+    print("Project name: " + project['name'])
     print(project)
 
 # Open the first project
@@ -38,7 +38,7 @@ already_open = project['status'] == 'opened'
 if not already_open:
     api.request("POST", ("/v2/projects", project['project_id'], "open"))
 
-print()
+print('')
 print('GET nodes of project ' + project['name'])
 for node in api.request("GET", ("/v2/projects", project['project_id'], "nodes")):
     print(node)
