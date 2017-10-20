@@ -97,7 +97,7 @@ class GNS3Api:
         try:
             config.read(fn_conf)
             serv_conf = dict(config.items('Server'))
-        except (OSError, configparser.Error):
+        except (IOError, OSError, configparser.Error):
             serv_conf = {}
 
         # extract config variables
