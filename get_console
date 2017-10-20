@@ -8,13 +8,10 @@
 import sys
 import gns3api
 
-# abort program with error message
 def die(*msg_list):
+    """ abort program with error message """
     error_msg = ' '.join(str(x) for x in msg_list)
-    if not error_msg.endswith('\n'):
-        error_msg += '\n'
-    sys.stderr.write(error_msg)
-    sys.exit(1)
+    sys.exit(error_msg.rstrip("\n\r"))
 
 
 # get command line parameter
