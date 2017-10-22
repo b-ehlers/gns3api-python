@@ -4,15 +4,15 @@ Access GNS3 controller via API
 
 import os
 import sys
+import ssl
+import json
+from base64 import b64encode
 if sys.version_info[0] < 3:
     import ConfigParser as configparser
     import httplib as http_client
 else:
     import configparser
     import http.client as http_client
-import ssl
-import json
-from base64 import b64encode
 
 class GNS3ApiException(http_client.HTTPException):
     """
@@ -131,7 +131,7 @@ class GNS3Api:
         method.upper()
 
         # make path variable to an URL path
-        if isinstance(path, list) or isinstance(path, tuple):
+        if isinstance(path, (list, tuple)):
             path = "/".join(str(x) for x in path)
         else:
             path = str(path)

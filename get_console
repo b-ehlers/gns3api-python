@@ -52,6 +52,7 @@ else:				# search for proj_name
         die("Project '{}' not found".format(proj_name))
 
 # search for node_name
+node = None
 for node in api.request('GET', ('/v2/projects', project['project_id'], 'nodes')):
     if node['name'] == node_name:
         break
@@ -66,6 +67,6 @@ if console_port is None:
     die("Node '{}' doesn't use the console".format(node_name))
 console_host = node['console_host']
 if console_host == '0.0.0.0' or console_host == '::':
-     compute = api.request('GET', ('/v2/computes', node['compute_id']))
-     console_host = compute['host']
+    compute = api.request('GET', ('/v2/computes', node['compute_id']))
+    console_host = compute['host']
 print("{} {}".format(console_host, console_port))
