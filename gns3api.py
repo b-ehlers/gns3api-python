@@ -7,14 +7,20 @@ import sys
 import ssl
 import json
 from base64 import b64encode
-if sys.version_info[0] < 3:
-    import ConfigParser as configparser
-    import httplib as http_client
-else:
-    import configparser
-    import http.client as http_client
 
-class GNS3ApiException(http_client.HTTPException):
+try:
+    import configparser
+except ImportError:		# fallback to Python 2 module
+    import ConfigParser as configparser
+
+try:
+    import http.client as http_client
+    from http.client import HTTPException as GNS3BaseException
+except ImportError:		# fallback to Python 2 module
+    import httplib as http_client
+    from httplib import HTTPException as GNS3BaseException
+
+class GNS3ApiException(GNS3BaseException):
     """
     GNS3 API Exception
     """
