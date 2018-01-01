@@ -149,7 +149,8 @@ class GNS3Api:
             self._conn.timeout = timeout
             if self._conn.sock:
                 self._conn.sock.settimeout(timeout)
-        headers = {'Content-Type': 'application/json'}
+        headers = {'Content-Type': 'application/json',
+                   'User-Agent': 'GNS3Api'}
         headers.update(self._auth)
         self._conn.request(method, path, body, headers=headers)
 
