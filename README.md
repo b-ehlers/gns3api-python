@@ -1,6 +1,6 @@
 # gns3api - Simple python module to access the GNS3 API
 
-This module provides an easy access to the GNS3 API, see http://api.gns3.net/en/2.0 .
+This module provides an easy access to the GNS3 API, see http://api.gns3.net/ .
 
 **Warning**: The module is not yet stable, it may change at any time.
 
@@ -14,8 +14,8 @@ Restrictions:
 - Notifications are not supported
 
 Requirements:
-- Python 2.7 or 3
-- GNS3 2.0
+- Python 2.7 or 3.x
+- GNS3 2.x
 
 `test_api` is a small program to test some basic API calls.
 
