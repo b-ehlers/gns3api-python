@@ -15,16 +15,30 @@ except ImportError:		# fallback to Python 2 module
 
 try:
     import http.client as http_client
-    from http.client import HTTPException as GNS3BaseException
+    GNS3BaseException = OSError
 except ImportError:		# fallback to Python 2 module
     import httplib as http_client
-    from httplib import HTTPException as GNS3BaseException
+    GNS3BaseException = IOError
 
 class GNS3ApiException(GNS3BaseException):
     """
-    GNS3 API Exception
+    GNS3 API Exceptions, base class
     """
+    pass
 
+class HTTPClientError(GNS3ApiException):
+    """
+    HTTP client library error
+    """
+    def __str__(self):
+        if not self.args[1]:
+            return '{}'.format(self.args[0])
+        return '{}: {}'.format(self.args[0], self.args[1])
+
+class HTTPError(GNS3ApiException):
+    """
+    HTTP response error
+    """
     def __str__(self):
         return '[Status {}] {}'.format(self.args[0], self.args[1])
 
@@ -65,22 +79,25 @@ class GNS3Api:
                 b64encode((user+':'+password).encode('utf-8')).decode('ascii')
 
         # open connection
-        if proto == 'http':
-            self._conn = http_client.HTTPConnection(host, port, timeout=10)
-        elif proto == 'https':
-            context = ssl.create_default_context()
-            if isinstance(verify, str):
-                context.check_hostname = False
-                context.load_verify_locations(cafile=verify)
-            elif not verify:
-                context.check_hostname = False
-                context.verify_mode = ssl.CERT_NONE
-            self._conn = http_client.HTTPSConnection(host, port, timeout=10,
-                                                     context=context)
-        else:
-            raise http_client.UnknownProtocol(proto)
+        try:
+            if proto == 'http':
+                self._conn = http_client.HTTPConnection(host, port, timeout=10)
+            elif proto == 'https':
+                context = ssl.create_default_context()
+                if isinstance(verify, str):
+                    context.check_hostname = False
+                    context.load_verify_locations(cafile=verify)
+                elif not verify:
+                    context.check_hostname = False
+                    context.verify_mode = ssl.CERT_NONE
+                self._conn = http_client.HTTPSConnection(host, port, timeout=10,
+                                                         context=context)
+            else:
+                raise HTTPClientError("UnknownProtocol", proto)
 
-        self._conn.connect()
+            self._conn.connect()
+        except http_client.HTTPException as err:
+            raise HTTPClientError(type(err).__name__, str(err))
 
     @staticmethod
     def get_controller_params():
@@ -152,15 +169,18 @@ class GNS3Api:
         headers = {'Content-Type': 'application/json',
                    'User-Agent': 'GNS3Api'}
         headers.update(self._auth)
-        self._conn.request(method, path, body, headers=headers)
 
-        # get response
-        resp = self._conn.getresponse()
-        data = resp.read()
-        if resp.getheader('Content-Type') == 'application/json':
-            result = json.loads(data.decode('utf-8', errors='ignore'))
-        else:
-            result = data
+        try:
+            # send request / get response
+            self._conn.request(method, path, body, headers=headers)
+            resp = self._conn.getresponse()
+            data = resp.read()
+            if resp.getheader('Content-Type') == 'application/json':
+                result = json.loads(data.decode('utf-8', errors='ignore'))
+            else:
+                result = data
+        except http_client.HTTPException as err:
+            raise HTTPClientError(type(err).__name__, str(err))
 
         # check for errors
         self.status_code = resp.status
@@ -172,7 +192,7 @@ class GNS3Api:
                     message = data.decode('utf-8', errors='ignore')
                 else:
                     message = resp.reason
-            raise GNS3ApiException(self.status_code, message)
+            raise HTTPError(self.status_code, message)
 
         return result
 
