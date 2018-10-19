@@ -66,6 +66,10 @@ class GNS3Api:
 
         if host is None or host == '':
             (proto, host, port, user, password) = GNS3Api.get_controller_params()
+        if host == '0.0.0.0':
+            host = '127.0.0.1'
+        elif host == '::':
+            host = '::1'
 
         self.controller = "{}://{}:{}".format(proto, host, port)
         self.status_code = None
