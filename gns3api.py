@@ -24,23 +24,26 @@ class GNS3ApiException(GNS3BaseException):
     """
     GNS3 API Exceptions, base class
     """
-    pass
+    def __init__(self, *args):
+        super(GNS3ApiException, self).__init__()
+        self.args = args
 
 class HTTPClientError(GNS3ApiException):
     """
     HTTP client library error
     """
     def __str__(self):
-        if not self.args[1]:
-            return '{}'.format(self.args[0])
-        return '{}: {}'.format(self.args[0], self.args[1])
+        return ": ".join(str(x) for x in self.args)
 
 class HTTPError(GNS3ApiException):
     """
     HTTP response error
     """
     def __str__(self):
-        return '[Status {}] {}'.format(self.args[0], self.args[1])
+        if len(self.args) >= 2:
+            return '[Status {}] '.format(self.args[0]) + \
+                   " ".join(str(x) for x in self.args[1:])
+        return str(self.args[0])
 
 class GNS3Api:
     """
