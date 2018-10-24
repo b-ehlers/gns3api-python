@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+#
+# start_nodes - start all nodes of a project
+#
+# Usage: start_nodes project
+#
+
+import sys
+import time
+import gns3api
+
+def die(*msg_list):
+    """ abort program with error message """
+    error_msg = ' '.join(str(x) for x in msg_list)
+    sys.exit(error_msg.rstrip("\n\r"))
+
+
+# get command line parameter
+if len(sys.argv) == 2:
+    proj_name = sys.argv[1]
+else:
+    die("Usage: start_nodes project")
+
+# connect to GNS3 controller
+try:
+    api = gns3api.GNS3Api()
+except (IOError, OSError, gns3api.GNS3BaseException) as err:
+    die("Can't connect to GNS3 controller:", err)
+
+# search for the project
+project = None
+for project in api.request('GET', '/v2/projects'):
+    if project['name'] == proj_name:
+        break
+else:
+    die("Project '{}' not found".format(proj_name))
+
+if project['status'] != 'opened':
+    api.request("POST", ("/v2/projects", project['project_id'], 'open'))
+
+# start nodes
+all_nodes = api.request('GET', ('/v2/projects', project['project_id'], 'nodes'))
+for node in sorted(all_nodes, key=lambda k: k['name'].lower()):
+    if node['status'] == 'started':
+        continue
+    time.sleep(3)
+    while True:
+        compute = api.request('GET', ('/v2/computes', node['compute_id']))
+        if compute['cpu_usage_percent'] < 60.0:
+            break
+        time.sleep(10)
+    print("Starting '{}'".format(node['name']))
+    try:
+        api.request("POST", ("/v2/projects", project['project_id'], 'nodes', node['node_id'], 'start'))
+    except (IOError, OSError) as err:
+        die(err)
