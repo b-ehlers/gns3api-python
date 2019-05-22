@@ -51,7 +51,7 @@ class GNS3Api:
     """
 
     def __init__(self, proto='http', host=None, port=3080,
-                 user=None, password=None, verify=True):
+                 user=None, password=None, profile=None, verify=True):
         """
         GNS3 API
 
@@ -61,6 +61,7 @@ class GNS3Api:
         :param port;     Port number, default 3080
         :param user:     User name, None for no authentification
         :param password: Password
+        :param profile:  GNS3 configuration profile
         :param verify:   Verify CERT (on https), default True
                          False: no CERT verification
                          True:  verification using the system CA certificates
@@ -68,7 +69,7 @@ class GNS3Api:
         """
 
         if host is None or host == '':
-            (proto, host, port, user, password) = GNS3Api.get_controller_params()
+            (proto, host, port, user, password) = GNS3Api.get_controller_params(profile)
         if host == '0.0.0.0':
             host = '127.0.0.1'
         elif host == '::':
@@ -107,20 +108,26 @@ class GNS3Api:
             raise HTTPClientError(type(err).__name__, str(err))
 
     @staticmethod
-    def get_controller_params():
+    def get_controller_params(profile=None):
         """
-        Returns GNS3 controller connection parameters
+        Get GNS3 controller connection parameters
+
+        :param profile: GNS3 configuration profile
 
         :returns: Tuple of protocol, host, port, user, password
         """
 
         # find config file
         if sys.platform.startswith('win'):
-            fn_conf = os.path.join(os.path.expandvars('%APPDATA%'), 'GNS3',
-                                   'gns3_server.ini')
+            fn_conf = os.path.join(os.path.expandvars('%APPDATA%'), 'GNS3')
+            if profile and profile != "default":
+                fn_conf = os.path.join(fn_conf, 'profiles', profile)
+            fn_conf = os.path.join(fn_conf, 'gns3_server.ini')
         else:
-            fn_conf = os.path.join(os.path.expanduser('~'), '.config', 'GNS3',
-                                   'gns3_server.conf')
+            fn_conf = os.path.join(os.path.expanduser('~'), '.config', 'GNS3')
+            if profile and profile != "default":
+                fn_conf = os.path.join(fn_conf, 'profiles', profile)
+            fn_conf = os.path.join(fn_conf, 'gns3_server.conf')
 
         # parse config
         config = configparser.ConfigParser()
