@@ -28,6 +28,13 @@ class GNS3ApiException(GNS3BaseException):
         super(GNS3ApiException, self).__init__()
         self.args = args
 
+class GNS3ConfigurationError(GNS3ApiException):
+    """
+    GNS3 configuration error
+    """
+    def __init__(self, message="Missing/invalid GNS3 configuration"):
+        super(GNS3ApiException, self).__init__(message)
+
 class HTTPClientError(GNS3ApiException):
     """
     HTTP client library error
@@ -131,15 +138,21 @@ class GNS3Api:
 
         # parse config
         config = configparser.ConfigParser()
+        serv_conf = None
         try:
-            config.read(fn_conf)
-            serv_conf = dict(config.items('Server'))
-        except (IOError, OSError, configparser.Error):
-            serv_conf = {}
+            if config.read(fn_conf):
+                serv_conf = dict(config.items('Server'))
+        except (IOError, OSError, configparser.Error) as err:
+            raise GNS3ConfigurationError("Error reading GNS3 configuration: {}".format(err))
+        if serv_conf is None:
+            raise GNS3ConfigurationError("Missing GNS3 configuration file '{}'".format(fn_conf))
 
         # extract config variables
+        try:
+            host = serv_conf['host']
+        except KeyError:
+            raise GNS3ConfigurationError("GNS3 configuration: Missing host")
         proto = serv_conf.get('protocol', 'http')
-        host = serv_conf.get('host', '127.0.0.1')
         port = int(serv_conf.get('port', 3080))
         user = serv_conf.get('user', None)
         password = serv_conf.get('password', None)
