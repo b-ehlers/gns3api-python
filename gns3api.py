@@ -76,7 +76,7 @@ class GNS3Api:
         """
 
         if not url:
-            (url, user, password) = GNS3Api.get_controller_params(profile)
+            (url, user, password) = GNS3Api.get_controller_connection(profile)
 
         # split URL
         try:
@@ -133,13 +133,13 @@ class GNS3Api:
             raise HTTPClientError(type(err).__name__, str(err))
 
     @staticmethod
-    def get_controller_params(profile=None):
+    def get_controller_settings(profile=None):
         """
-        Get GNS3 controller connection parameters
+        Get GNS3 controller settings
 
         :param profile: GNS3 configuration profile
 
-        :returns: Tuple of url, user, password
+        :returns: controller settings
         """
 
         # find config file
@@ -165,11 +165,25 @@ class GNS3Api:
         if serv_conf is None:
             raise GNS3ConfigurationError("Missing GNS3 configuration file '{}'".format(fn_conf))
 
-        # extract config variables
-        try:
-            host = serv_conf['host']
-        except KeyError:
+        # check for mandatory host key
+        if 'host' not in serv_conf:
             raise GNS3ConfigurationError("GNS3 configuration: Missing host")
+
+        return serv_conf
+
+    @staticmethod
+    def get_controller_connection(profile=None):
+        """
+        Get GNS3 controller connection parameters
+
+        :param profile: GNS3 configuration profile
+
+        :returns: Tuple of url, user, password
+        """
+
+        serv_conf = GNS3Api.get_controller_settings(profile)
+
+        host = serv_conf['host']
         proto = serv_conf.get('protocol', 'http')
         port = int(serv_conf.get('port', 3080))
         user = serv_conf.get('user', None)
