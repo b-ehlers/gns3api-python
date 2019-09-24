@@ -33,7 +33,7 @@ class GNS3ConfigurationError(GNS3ApiException):
     GNS3 configuration error
     """
     def __init__(self, message="Missing/invalid GNS3 configuration"):
-        super(GNS3ApiException, self).__init__(message)
+        GNS3ApiException.__init__(self, message)
 
 class HTTPClientError(GNS3ApiException):
     """
@@ -111,7 +111,7 @@ class GNS3Api:
                 raise HTTPClientError("UnknownProtocol", proto)
 
             self._conn.connect()
-        except http_client.HTTPException as err:
+        except (IOError, OSError, http_client.HTTPException) as err:
             raise HTTPClientError(type(err).__name__, str(err))
 
     @staticmethod
@@ -206,7 +206,7 @@ class GNS3Api:
                 result = json.loads(data.decode('utf-8', errors='ignore'))
             else:
                 result = data
-        except http_client.HTTPException as err:
+        except (IOError, OSError, http_client.HTTPException) as err:
             raise HTTPClientError(type(err).__name__, str(err))
 
         # check for errors
