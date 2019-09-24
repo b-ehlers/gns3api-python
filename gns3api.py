@@ -15,9 +15,11 @@ except ImportError:		# fallback to Python 2 module
 
 try:
     import http.client as http_client
+    from urllib.parse import urlsplit
     GNS3BaseException = OSError
 except ImportError:		# fallback to Python 2 module
     import httplib as http_client
+    from urlparse import urlsplit
     GNS3BaseException = IOError
 
 class GNS3ApiException(GNS3BaseException):
@@ -57,15 +59,13 @@ class GNS3Api:
     GNS3 API - an API to GNS3
     """
 
-    def __init__(self, proto='http', host=None, port=3080,
-                 user=None, password=None, profile=None, verify=True):
+    def __init__(self, url=None, user=None, password=None,
+                 profile=None, verify=True):
         """
         GNS3 API
 
-        :param proto:    Protocol (http/https), default 'http'
-        :param host:     Host name or IP, if None the connection parameters
+        :param url:      Server URL, if None the connection parameters
                          are read from the GNS3 configuration file
-        :param port;     Port number, default 3080
         :param user:     User name, None for no authentification
         :param password: Password
         :param profile:  GNS3 configuration profile
@@ -75,14 +75,32 @@ class GNS3Api:
                          file:  verification using the file and the system CA
         """
 
-        if host is None or host == '':
-            (proto, host, port, user, password) = GNS3Api.get_controller_params(profile)
+        if not url:
+            (url, user, password) = GNS3Api.get_controller_params(profile)
+
+        # split URL
+        try:
+            url_tuple = urlsplit(url, "http")
+            if not url_tuple.netloc:	# fix missing "//" before host
+                url_tuple = urlsplit(url_tuple.scheme + "://" + url_tuple.path)
+            proto = url_tuple.scheme
+            host = url_tuple.hostname
+            port = url_tuple.port or 3080
+            if user is None:
+                user = url_tuple.username
+                if password is None:
+                    password = url_tuple.password
+        except ValueError as err:
+            raise HTTPClientError("UrlError", str(err))
         if host == '0.0.0.0':
             host = '127.0.0.1'
         elif host == '::':
             host = '::1'
 
-        self.controller = "{}://{}:{}".format(proto, host, port)
+        if ':' in host:			# IPv6
+            self.controller = "{}://[{}]:{}".format(proto, host, port)
+        else:
+            self.controller = "{}://{}:{}".format(proto, host, port)
         self.status_code = None
 
         # authentication
@@ -121,7 +139,7 @@ class GNS3Api:
 
         :param profile: GNS3 configuration profile
 
-        :returns: Tuple of protocol, host, port, user, password
+        :returns: Tuple of url, user, password
         """
 
         # find config file
@@ -157,7 +175,13 @@ class GNS3Api:
         user = serv_conf.get('user', None)
         password = serv_conf.get('password', None)
 
-        return (proto, host, port, user, password)
+        # create URL
+        if ':' in host:			# IPv6
+            url = "{}://[{}]:{}".format(proto, host, port)
+        else:
+            url = "{}://{}:{}".format(proto, host, port)
+
+        return (url, user, password)
 
     def request(self, method, path, args=None, timeout=60):
         """

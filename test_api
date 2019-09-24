@@ -3,7 +3,7 @@
 import gns3api
 
 api = gns3api.GNS3Api()
-# api = gns3api.GNS3Api("https", "remote", verify="server.cert")
+# api = gns3api.GNS3Api("https://remote", verify="server.cert")
 print("GNS3 controller = " + api.controller)
 
 print('')
