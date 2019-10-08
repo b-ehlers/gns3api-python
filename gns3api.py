@@ -60,7 +60,7 @@ class GNS3Api:
     """
 
     def __init__(self, url=None, user=None, password=None,
-                 profile=None, verify=True):
+                 profile=None, version=None, verify=True):
         """
         GNS3 API
 
@@ -69,6 +69,7 @@ class GNS3Api:
         :param user:     User name, None for no authentification
         :param password: Password
         :param profile:  GNS3 configuration profile
+        :param version:  API version, None for autodetect
         :param verify:   Verify CERT (on https), default True
                          False: no CERT verification
                          True:  verification using the system CA certificates
@@ -76,7 +77,8 @@ class GNS3Api:
         """
 
         if not url:
-            (url, user, password) = GNS3Api.get_controller_connection(profile)
+            (url, user, password) = \
+                GNS3Api.get_controller_connection(profile, version)
 
         # split URL
         try:
@@ -133,26 +135,47 @@ class GNS3Api:
             raise HTTPClientError(type(err).__name__, str(err))
 
     @staticmethod
-    def get_controller_settings(profile=None):
+    def get_controller_settings(profile=None, version=None):
         """
         Get GNS3 controller settings
 
         :param profile: GNS3 configuration profile
+        :param version: API version, None for autodetect
 
         :returns: controller settings
         """
 
-        # find config file
+        # find config base directory
         if sys.platform.startswith('win'):
             fn_conf = os.path.join(os.path.expandvars('%APPDATA%'), 'GNS3')
-            if profile and profile != "default":
-                fn_conf = os.path.join(fn_conf, 'profiles', profile)
-            fn_conf = os.path.join(fn_conf, 'gns3_server.ini')
+            fn_file = 'gns3_server.ini'
         else:
             fn_conf = os.path.join(os.path.expanduser('~'), '.config', 'GNS3')
-            if profile and profile != "default":
-                fn_conf = os.path.join(fn_conf, 'profiles', profile)
-            fn_conf = os.path.join(fn_conf, 'gns3_server.conf')
+            fn_file = 'gns3_server.conf'
+
+        # add version
+        if version is None:		# search for highest version
+            version = ""
+            version_split = []
+            for name in os.listdir(fn_conf):
+                try:
+                    name_split = list(map(int, name.split('.')))
+                    if name_split > version_split:
+                        version = name
+                        version_split = name_split
+                except ValueError:
+                    pass
+        else:				# use only <major>.<minor> part
+            version = '.'.join(version.split('.', 2)[0:2])
+        if version not in ('', '2.0', '2.1'):
+            fn_conf = os.path.join(fn_conf, version)
+
+        # add profile
+        if profile and profile != "default":
+            fn_conf = os.path.join(fn_conf, 'profiles', profile)
+
+        # add config filename
+        fn_conf = os.path.join(fn_conf, fn_file)
 
         # parse config
         config = configparser.ConfigParser()
@@ -172,16 +195,17 @@ class GNS3Api:
         return serv_conf
 
     @staticmethod
-    def get_controller_connection(profile=None):
+    def get_controller_connection(profile=None, version=None):
         """
         Get GNS3 controller connection parameters
 
         :param profile: GNS3 configuration profile
+        :param version: API version, None for autodetect
 
         :returns: Tuple of url, user, password
         """
 
-        serv_conf = GNS3Api.get_controller_settings(profile)
+        serv_conf = GNS3Api.get_controller_settings(profile, version)
 
         host = serv_conf['host']
         proto = serv_conf.get('protocol', 'http')
