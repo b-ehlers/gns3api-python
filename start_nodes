@@ -24,7 +24,7 @@ else:
 # connect to GNS3 controller
 try:
     api = gns3api.GNS3Api()
-except (IOError, OSError, gns3api.GNS3BaseException) as err:
+except (OSError, gns3api.GNS3ApiException) as err:
     die("Can't connect to GNS3 controller:", err)
 
 # search for the project

@@ -8,26 +8,16 @@ import ssl
 import json
 from base64 import b64encode
 
-try:
-    import configparser
-except ImportError:		# fallback to Python 2 module
-    import ConfigParser as configparser
+import configparser
+import http.client
+from urllib.parse import urlsplit
 
-try:
-    import http.client as http_client
-    from urllib.parse import urlsplit
-    GNS3BaseException = OSError
-except ImportError:		# fallback to Python 2 module
-    import httplib as http_client
-    from urlparse import urlsplit
-    GNS3BaseException = IOError
-
-class GNS3ApiException(GNS3BaseException):
+class GNS3ApiException(OSError):
     """
     GNS3 API Exceptions, base class
     """
     def __init__(self, *args):
-        super(GNS3ApiException, self).__init__()
+        super().__init__()
         self.args = args
 
 class GNS3ConfigurationError(GNS3ApiException):
@@ -116,7 +106,7 @@ class GNS3Api:
         # open connection
         try:
             if proto == 'http':
-                self._conn = http_client.HTTPConnection(host, port, timeout=10)
+                self._conn = http.client.HTTPConnection(host, port, timeout=10)
             elif proto == 'https':
                 context = ssl.create_default_context()
                 if isinstance(verify, str):
@@ -125,13 +115,13 @@ class GNS3Api:
                 elif not verify:
                     context.check_hostname = False
                     context.verify_mode = ssl.CERT_NONE
-                self._conn = http_client.HTTPSConnection(host, port, timeout=10,
+                self._conn = http.client.HTTPSConnection(host, port, timeout=10,
                                                          context=context)
             else:
                 raise HTTPClientError("UnknownProtocol", proto)
 
             self._conn.connect()
-        except (IOError, OSError, http_client.HTTPException) as err:
+        except (OSError, http.client.HTTPException) as err:
             raise HTTPClientError(type(err).__name__, str(err))
 
     @staticmethod
@@ -182,8 +172,8 @@ class GNS3Api:
         serv_conf = None
         try:
             if config.read(fn_conf):
-                serv_conf = dict(config.items('Server'))
-        except (IOError, OSError, configparser.Error) as err:
+                serv_conf = config['Server']
+        except (OSError, KeyError, configparser.Error) as err:
             raise GNS3ConfigurationError("Error reading GNS3 configuration: {}".format(err))
         if serv_conf is None:
             raise GNS3ConfigurationError("Missing GNS3 configuration file '{}'".format(fn_conf))
@@ -268,7 +258,7 @@ class GNS3Api:
                 result = json.loads(data.decode('utf-8', errors='ignore'))
             else:
                 result = data
-        except (IOError, OSError, http_client.HTTPException) as err:
+        except (OSError, http.client.HTTPException) as err:
             raise HTTPClientError(type(err).__name__, str(err))
 
         # check for errors

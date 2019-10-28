@@ -15,7 +15,7 @@ Restrictions:
 - Notifications are not supported
 
 Requirements:
-- Python 2.7 or 3.x
+- Python 3.x
 - GNS3 2.x
 
 Installation:
