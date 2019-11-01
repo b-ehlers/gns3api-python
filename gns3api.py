@@ -108,7 +108,6 @@ class GNS3Api:
             self.controller = "{}://[{}]:{}".format(proto, host, port)
         else:
             self.controller = "{}://{}:{}".format(proto, host, port)
-        self.status_code = None
 
         # authentication
         self._auth = {}
@@ -119,6 +118,7 @@ class GNS3Api:
                 b64encode((user+':'+password).encode('utf-8')).decode('ascii')
 
         # open connection
+        self.status_code = None
         try:
             if proto == 'http':
                 self._conn = http.client.HTTPConnection(host, port, timeout=10)
@@ -226,7 +226,7 @@ class GNS3Api:
 
         return (url, user, password)
 
-    def request(self, method, path, args=None, timeout=60):
+    def request_file(self, method, path, args=None, timeout=60):
         """
         API request
 
@@ -235,14 +235,19 @@ class GNS3Api:
         :param args:    arguments to the API endpoint
         :param timeout: timeout, default 60
 
-        :returns: result
+        :returns:       HTTPResponse, a file object
         """
 
+        headers = {'User-Agent': 'GNS3Api'}
+        self.status_code = None
+
         # json encode args
-        if args is None:
-            body = None
-        else:
+        if isinstance(args, dict):
             body = json.dumps(args, separators=(',', ':'))
+            headers['Content-Type'] = 'application/json'
+        else:
+            body = args
+            headers['Content-Type'] = 'application/octet-stream'
 
         # methods are upper case
         method.upper()
@@ -255,38 +260,64 @@ class GNS3Api:
         if not path.startswith("/"):
             path = "/" + path
 
-        # send request
+        # update timeout
         if self._conn.timeout != timeout:
             self._conn.timeout = timeout
             if self._conn.sock:
                 self._conn.sock.settimeout(timeout)
-        headers = {'Content-Type': 'application/json',
-                   'User-Agent': 'GNS3Api'}
-        headers.update(self._auth)
 
+        # send request / get response
+        headers.update(self._auth)
         try:
-            # send request / get response
             self._conn.request(method, path, body, headers=headers)
             resp = self._conn.getresponse()
-            data = resp.read()
-            if resp.getheader('Content-Type') == 'application/json':
-                result = json.loads(data.decode('utf-8', errors='ignore'))
-            else:
-                result = data
+            self.status_code = resp.status
         except (OSError, http.client.HTTPException) as err:
             raise HTTPClientError(type(err).__name__, str(err))
 
         # check for errors
-        self.status_code = resp.status
         if self.status_code < 200 or self.status_code >= 300:
             try:
-                message = result['message']
-            except (TypeError, KeyError):
-                if data is not None and data != b'':
-                    message = data.decode('utf-8', errors='ignore')
+                message = resp.read()
+            except (OSError, http.client.HTTPException):
+                message = resp.reason
+            else:
+                if message:
+                    message = message.decode('utf-8', errors='ignore')
+                    if resp.getheader('Content-Type') == 'application/json':
+                        message = json.loads(message)
+                        try:
+                            message = message['message']
+                        except (TypeError, KeyError):
+                            pass
                 else:
                     message = resp.reason
             raise HTTPError(self.status_code, message)
+
+        return resp
+
+    def request(self, method, path, args=None, timeout=60):
+        """
+        API request
+
+        :param method:  HTTP method ('GET'/'PUT'/'POST'/'DELETE')
+        :param path:    URL path, can be a list or tuple
+        :param args:    arguments to the API endpoint
+        :param timeout: timeout, default 60
+
+        :returns:       result
+        """
+
+        resp = self.request_file(method, path, args, timeout)
+
+        # read response
+        try:
+            result = resp.read()
+        except (OSError, http.client.HTTPException) as err:
+            raise HTTPClientError(type(err).__name__, str(err))
+
+        if resp.getheader('Content-Type') == 'application/json':
+            result = json.loads(result.decode('utf-8', errors='ignore'))
 
         return result
 
