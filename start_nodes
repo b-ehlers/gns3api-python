@@ -24,7 +24,7 @@ else:
 # connect to GNS3 controller
 try:
     api = gns3api.GNS3Api()
-except (OSError, gns3api.GNS3ApiException) as err:
+except gns3api.GNS3ApiException as err:
     die("Can't connect to GNS3 controller:", err)
 
 # search for the project
@@ -52,5 +52,5 @@ for node in sorted(all_nodes, key=lambda k: k['name'].lower()):
     print("Starting '{}'".format(node['name']))
     try:
         api.request("POST", ("/v2/projects", project['project_id'], 'nodes', node['node_id'], 'start'))
-    except (IOError, OSError) as err:
+    except gns3api.GNS3ApiException as err:
         die(err)

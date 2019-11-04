@@ -27,7 +27,7 @@ else:
 # connect to GNS3 controller
 try:
     api = gns3api.GNS3Api()
-except (OSError, gns3api.GNS3ApiException) as err:
+except gns3api.GNS3ApiException as err:
     die("Can't connect to GNS3 controller:", err)
 
 # search for the project
@@ -66,7 +66,7 @@ console_port = node['console']
 if console_port is None:
     die("Node '{}' doesn't use the console".format(node_name))
 console_host = node['console_host']
-if console_host == '0.0.0.0' or console_host == '::':
+if console_host in ('0.0.0.0', '::'):
     compute = api.request('GET', ('/v2/computes', node['compute_id']))
     console_host = compute['host']
 print("{} {}".format(console_host, console_port))
