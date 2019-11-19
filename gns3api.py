@@ -215,8 +215,12 @@ class GNS3Api:
         host = serv_conf['host']
         proto = serv_conf.get('protocol', 'http')
         port = int(serv_conf.get('port', 3080))
-        user = serv_conf.get('user', None)
-        password = serv_conf.get('password', None)
+        if serv_conf.get('auth'):
+            user = serv_conf.get('user', None)
+            password = serv_conf.get('password', None)
+        else:
+            user = None
+            password = None
 
         # create URL
         if ':' in host:			# IPv6
