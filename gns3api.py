@@ -254,7 +254,9 @@ class GNS3Api:
             headers['Content-Type'] = 'application/octet-stream'
 
         # methods are upper case
-        method.upper()
+        method = method.upper()
+        if method not in ('GET', 'PUT', 'POST', 'DELETE'):
+            raise HTTPError(405, "405: Method Not Allowed")
 
         # make path variable to an URL path
         if isinstance(path, (list, tuple)):
