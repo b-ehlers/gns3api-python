@@ -4,7 +4,7 @@ setup(
     name='gns3api',
     version='0.1',
     description='Simple python module to access the GNS3 API',
-    url='https://git.b-ehlers.de/ehlers/gns3api',
+    url='https://git.b-ehlers.de/ehlers/gns3api-python',
     author='Bernhard Ehlers',
     author_email='none@b-ehlers.de',
     license='GNU General Public License v3 (GPLv3)',
